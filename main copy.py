@@ -27,27 +27,17 @@ app.add_middleware(
 
 # Map language to Gemini voice
 VOICE_MAPPING = {
-    "en": "achernar",       # English
-    "lg": "charon",       # Luganda (assuming "charon" is still appropriate)
-    "es": "achird",         # Spanish
-    "fr": "algenib",        # French
-    "de": "algieba",        # German
-    "ja": "alnilam",        # Japanese
-    "zh": "aoede",          # Chinese
-    "hi": "autonoe",        # Hindi
-    "ar": "callirrhoe",     # Arabic
-    "ru": "charon",         # Russian
-    "pt": "despina",        # Portuguese
-
-    "sw": "achernar", # Swahili - **CHECK FOR SWAHILI VOICE. "achernar" is a placeholder.**
-
-    "ny": "autonoe", # Runyankore - **CHECK FOR RUNYANKORE VOICE. Is "autonoe" (Hindi) a reasonable placeholder?**
-    "luo": "charon", # Luo - **CHECK FOR LUO VOICE.  Is "charon" (Russian) a reasonable placeholder?**
-
-    "xog": "despina", # Lusoga - **CHECK FOR LUSOGA VOICE. Is "despina" (Portuguese) a reasonable placeholder?**
-    "bug": "achird",  # Lugisu - **CHECK FOR LUGISU VOICE. Is "achird" (Spanish) a reasonable placeholder?**
-
-    "ln": "algenib", # Lingala - **CHECK FOR LINGALA VOICE. Is "algenib" (French) a reasonable placeholder?**
+    "en": "achernar",
+    "lg": "charon",
+    "es": "achird",
+    "fr": "algenib",
+    "de": "algieba",
+    "ja": "alnilam",
+    "zh": "aoede",
+    "hi": "autonoe",
+    "ar": "callirrhoe",
+    "ru": "charon",
+    "pt": "despina"
 }
 
 # Configure Gemini Client
@@ -147,10 +137,11 @@ def generate_tts(prompt: str, voice: str) -> bytes:
 
 
 # WebSocket endpoint
+# WebSocket endpoint
 @app.websocket("/ws/{session_id}/{language}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str, language: str):
     await manager.connect(websocket, session_id)
-    #voice = VOICE_MAPPING.get(language, "achernar")
+    voice = VOICE_MAPPING.get(language, "achernar")
     audio_chunks = []
     translator = Translator()  # Initialize translator
 
@@ -193,23 +184,20 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str, language: st
                 # Prepare TTS response
                 current_time = datetime.now().strftime("%H:%M")
 
-                # Dynamically select voice and handle translation
-                voice = VOICE_MAPPING.get(language)
-                if voice is None:
-                    print(f"⚠️ No voice found for language {language}.  Using default 'achernar'.")
-                    voice = "achernar"  # Default voice
-
+                # Translate "The current time is..." to Luganda
                 try:
-                    if language != "en":  # Translate if not English
-                        translated_obj = await translator.translate(f"The current time is {current_time}.", dest=language)
-                        reply = translated_obj.text
+                    if language == "lg":
+                        # AWAIT THE TRANSLATION
+                        translated_obj = await translator.translate(f"The current time is {current_time}.", dest="lg")
+                        translated_text = translated_obj.text
+                        reply = translated_text  # No need to say "Say this in Luganda"
                     else:
-                        reply = f"The current time is {current_time}"  # No translation needed for English
+                        reply = f"The current time is {current_time}"  # No extra message
                 except Exception as e:
                     print(f"Translation error: {e}")
                     reply = f"The current time is {current_time}"  # Fallback to English if translation fails
 
-                print(f"🔊 Generating TTS: {reply} using voice: {voice}")
+                print(f"🔊 Generating TTS: {reply}")
                 tts_audio = generate_tts(reply, voice)
                 print(f"📤 Sending audio response: {len(tts_audio)} bytes")
 
