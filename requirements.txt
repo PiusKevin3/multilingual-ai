@@ -1,0 +1,13 @@
+fastapi 
+uvicorn 
+# google-generativeai>=1.16.0
+python-dotenv
+websockets
+python-multipart
+aiohttp
+genai
+google-genai>=1.16.0
+opencv-python
+pyaudio 
+pillow
+mss
