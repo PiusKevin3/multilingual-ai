@@ -95,12 +95,12 @@ def generate_tts(prompt: str, voice: str) -> bytes:
             )
         except Exception as e:
             print(f"❌ Error during API call: {e}")
-            return None # Return None in case of API call failure
+            return None
 
     try:
         response = call_model()
 
-        if response is None:  # Check if the API call failed
+        if response is None:
             print("❌ API call failed, cannot generate TTS.")
             return b""
 
@@ -108,28 +108,29 @@ def generate_tts(prompt: str, voice: str) -> bytes:
 
         candidate = response.candidates[0]
 
-        if candidate.finish_reason != types.FinishReason.STOP: #Check the finish_reason
-
-          print(f"❌ TTS generation incomplete, finish_reason = {candidate.finish_reason}.  Returning empty audio.")
-          return b""
-
-
-        if candidate.content is None or candidate.content.parts is None or not candidate.content.parts:
-            print("❌ Incomplete TTS response, missing content or parts. Returning empty audio.")
+        # 🛑 Handle incomplete generation
+        if candidate.finish_reason != types.FinishReason.STOP:
+            print(f"❌ TTS generation incomplete, finish_reason = {candidate.finish_reason}. Returning empty audio.")
             return b""
 
+        if not candidate.content or not candidate.content.parts:
+            print("❌ Incomplete TTS response: no content or parts.")
+            return b""
 
         part = candidate.content.parts[0]
+
+        if not hasattr(part, "inline_data") or not part.inline_data or not part.inline_data.data:
+            print("❌ TTS part missing audio data.")
+            return b""
+
         raw_pcm = part.inline_data.data
-
-        # ✅ Convert raw PCM to WAV for browser playback
         wav_data = pcm_to_wav(raw_pcm, sample_rate=24000)
-
         return wav_data
 
     except Exception as e:
         print(f"❌ TTS processing error: {e}")
         return b""
+
 
 
 
